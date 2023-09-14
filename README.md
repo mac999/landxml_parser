@@ -12,7 +12,7 @@ git clone https://github.com/mac999/landxml_parser
 python test_landxml_parser.py
 
 # version history
-0.1: draft version. xml parser
+0.1: draft version. xml parser</br>
 0.2: support alignment, cross section, landxml 
 
 # about
