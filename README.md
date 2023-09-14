@@ -13,7 +13,7 @@ python test_landxml_parser.py
 
 # version history
 0.1: draft version. xml parser</br>
-0.2: support alignment, cross section, landxml 
+0.2: support alignment, cross section, profile 
 
 # about
 landxml parser develop by taewook kang(laputa99999@gmail.com).
