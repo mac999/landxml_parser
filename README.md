@@ -195,8 +195,6 @@ install the below program.
   - Extracts alignments and blocks.
   - Saves results in MongoDB.
 
----
-
 ### **Summary**
 | Script | Database | Purpose |
 |--------|----------|---------|
@@ -204,8 +202,6 @@ install the below program.
 | `export_xsections_mongodb.py` | MongoDB | Stores **cross-section** data in MongoDB. |
 | `export_mongodb.py` | MongoDB | Exports **alignments and blocks** to MongoDB. |
 
-
----
 
 ## **Test Scripts**
 | Script | Purpose |
