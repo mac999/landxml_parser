@@ -55,9 +55,29 @@ python manage.py runserver
 - TBD: TIN, clothoid etc 
 
 ---
-# utility tools
+# database export and test tools 
+This repository contains Python scripts for exporting and processing civil engineering alignment data from LandXML. The scripts support **SQLite** and **MongoDB** databases and include test modules for verifying calculations and data transformations.
+## prepare
+install the below program.
+- [MongoDB](https://www.mongodb.com/try/download/community)
+
+## 📂 Project Structure
+```
+📦 Civil_Model_Export
+├── export_sqlite.py              # Exports alignment data to SQLite
+├── export_mongodb.py             # Exports alignment data to MongoDB
+├── export_xsections_mongodb.py   # Exports cross-section data to MongoDB
+├── test_road_block_grid.py       # Tests polyline and block grid generation
+├── test_sta_perp_offset.py       # Tests perpendicular offset calculations
+├── test_sta_pos_calc.py          # Tests station position calculations
+├── test_xsection.py              # Tests cross-section visualization
+├── test_geo_calculation.py       # Tests geographic coordinate conversions
+├── test_landxml_parser.py        # Parses LandXML data
+└── README.md                     # Project documentation
+```
+
 ## export landxml to database 
-### **1. `export_sqlite.py`** (SQLite-based export)
+### **`export_sqlite.py`** (SQLite-based export)
 
 #### **Purpose:**
 - Reads alignment data from LandXML.
@@ -100,7 +120,7 @@ python manage.py runserver
 
 ---
 
-### **2. `export_xsections_mongodb.py`** (MongoDB-based cross-section export)
+### **`export_xsections_mongodb.py`** (MongoDB-based cross-section export)
 
 #### **Purpose:**
 - Extracts **cross-section data** from alignments.
@@ -134,7 +154,7 @@ python manage.py runserver
 
 ---
 
-### **3. `export_mongodb.py`** (MongoDB-based alignment export)
+### **`export_mongodb.py`** (MongoDB-based alignment export)
 
 #### **Purpose:**
 - Extracts and exports **alignment data** and **alignment blocks**.
@@ -185,8 +205,29 @@ python manage.py runserver
 | `export_mongodb.py` | MongoDB | Exports **alignments and blocks** to MongoDB. |
 
 
-# author
-landxml parser develop by taewook kang(laputa99999@gmail.com).
+---
 
-# license
-MIT license.
+## **Test Scripts**
+| Script | Purpose |
+|--------|---------|
+| `test_road_block_grid.py` | Tests polyline and block grid visualization. |
+| `test_sta_perp_offset.py` | Computes perpendicular offsets for alignment. |
+| `test_sta_pos_calc.py` | Computes station positions and visualizes alignments. |
+| `test_xsection.py` | Plots cross-section data. |
+| `test_geo_calculation.py` | Converts geographic coordinates. |
+| `test_landxml_parser.py` | Parses LandXML files and saves JSON output. |
+
+- **Run any test script:**
+  ```sh
+  python test_xsection.py
+  ```
+
+---
+
+# 📩 contact
+- **Author:** Kang Taewook  
+- **Email:** laputa99999@gmail.com  
+
+# ⚖️ License
+This project is licensed under the MIT License.
+
