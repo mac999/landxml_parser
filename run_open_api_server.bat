@@ -1,0 +1,1 @@
+uvicorn open_api_server:app --reload --port 8001 --ws-max-size 16777216
