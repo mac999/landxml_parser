@@ -6,7 +6,6 @@ This project includes LandXML parser, civil model generation from LandXML, civil
 - Export landxml to sqlite, mongodb
 
 <p align="center">
-<img src="https://github.com/mac999/landxml_parser/blob/main/doc/map.gif"/></br>
 <img height="200" src="https://github.com/mac999/landxml_parser/blob/main/doc/civil3d_landxml.PNG"/><img height="200" src="https://github.com/mac999/landxml_parser/blob/main/doc/landxml_sample.PNG"/>
 <img height="200" src="https://github.com/mac999/landxml_parser/blob/main/doc/json_file.PNG"/>
 </p>
@@ -18,7 +17,8 @@ It is easy to develop converter from LandXML to database, file such as JSON, Mon
 
 By using LandXML parser, web-based model viewer, converter, application can be developed like below.</br> 
 <p align="center">
-<a href="https://www.youtube.com/watch?v=TtWs6Bs8az0"><img height="300" src="https://github.com/mac999/landxml_parser/blob/main/doc/demo_1.PNG"/></a>
+<a href="https://www.youtube.com/watch?v=TtWs6Bs8az0">
+<img height="300" src="https://github.com/mac999/landxml_parser/blob/main/doc/map.gif"/></a>
 </p>
 
 # install 
