@@ -1,5 +1,5 @@
 # landxml parser, civil model server and civil model web viewer
-This project includes LandXML parser, civil model generation from LandXML, civil model server and web viewer. 
+This project includes LandXML parser (ver 0.3), civil model generation from LandXML, civil model server and web viewer. 
 - LandXML parser to read alignments, cross sections, vertical alignments and convert JSON, excel.
 - Civil model server to support OpenAPI
 - Civil model web viewer to support visualization for landxml in web
