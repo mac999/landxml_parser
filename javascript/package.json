@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "natural": "^6.12.0",
+    "xml2js": "^0.6.2"
+  }
+}
