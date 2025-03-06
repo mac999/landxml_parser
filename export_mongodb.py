@@ -41,7 +41,7 @@ def export_align_model(model, aligns):
 		return
 	align = aligns[0]
 
-	sta_list, points = align.get_polyline(20.0)	# 선형을 10미터 스테이션 간격으로 좌표점을 생성
+	sta_list, points = align.get_polyline(20.0)	# Generate coordinate points at 20-meter station intervals
 	sta_offset_list, offset_points = align.get_offset_polyline(20, 10)	
 
 	x = [position[0] for position in points]
@@ -53,7 +53,7 @@ def export_align_model(model, aligns):
 	gsr80_points = cge.convert_coordinates(x, y)
 	gsr80_offset_points = cge.convert_coordinates(offset_x, offset_y)
 
-	offset_x, offset_y = 4.590738489, 2.193844253 # landxml_road_sample LandXML은 공사원점에서 진행하므로, 임의로 테스트위해, KICT 연천 기준으로 이동
+	4.590738489, 2.193844253 # The LandXML road sample proceeds from the construction origin, so for testing purposes, it is moved based on the Korea Yeoncheon reference
 	gsr80_points = [[x + offset_x, y + offset_y] for x, y in zip(gsr80_points[0], gsr80_points[1])]
 	gsr80_offset_points = [[x + offset_x, y + offset_y] for x, y in zip(gsr80_offset_points[0], gsr80_offset_points[1])]
 
@@ -97,7 +97,7 @@ def export_align_block_model(model, aligns):
 		meter = sta % 1000.0
 		sta_name = f'{km:.0f}+{meter}' # 1+140, 2+250, 3+360, ...
 
-		offset_x, offset_y = 4.590738489, 2.193844253 # landxml_road_sample LandXML은 공사원점에서 진행하므로, 임의로 테스트위해, KICT 연천 기준으로 이동
+		4.590738489, 2.193844253 # The LandXML road sample proceeds from the construction origin, so for testing purposes, it is moved based on the Korea Yeoncheon reference
 
 		vertics = block['vertices']
 		x = [position[0] for position in vertics]
@@ -141,8 +141,8 @@ def test():
 
 	start = time.time()
 
-	cm = civil_model(model)	# 선형 계산을 위한 모델 정의
-	cm.initialize()			# 선형 계산 정보 생성
+	cm = civil_model(model)  # Define model for alignment calculation
+	cm.initialize()          # Generate alignment calculation information
 	aligns = cm.get_alignments()
 
 	# export_align_model(cm, aligns)

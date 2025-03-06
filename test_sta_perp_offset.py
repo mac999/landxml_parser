@@ -9,20 +9,20 @@ import landxml_parser as lxml, civil_geo_engine as cge
 from civil_geo_engine import civil_model
 
 def test_perp_offset(cm, perp_object_point):	
-	align = cm.get_alignment(0)	# 첫번째 선형 얻기
-	align.show_offset_objects(perp_object_point)	# 수직선을 그리고, 수직선과 교차하는 지점을 찾아서 표시
+	align = cm.get_alignment(0)	# Get the first alignment
+	align.show_offset_objects(perp_object_point)	# Draw a perpendicular line and mark the intersection points
 
 def main():
-	lp = lxml.landxml()	# landxml parser 정의
-	# model = lp.load('./landxml_railway_sample.xml')	# landxml 파일 로딩
+	lp = lxml.landxml()	
+	# model = lp.load('./landxml_railway_sample.xml')	
 	# perp_object_point = (33934.512065292125, -57758.02867007709)
-	model = lp.load('./landxml_road_sample.xml')	# landxml 파일 로딩
+	model = lp.load('./landxml_road_sample.xml')	
 	perp_object_point = (5373.0, 4946.0)
 	# print(model)
-	lp.save('output_landxml.json')	# landxml 파일을 json 파일로 변환해 저장
+	lp.save('output_landxml.json')	
 
-	cm = civil_model(model)	# 선형 계산을 위한 모델 정의
-	cm.initialize()			# 선형 계산 정보 생성
+	cm = civil_model(model)	
+	cm.initialize()			
 
 	test_perp_offset(cm, perp_object_point)
 	

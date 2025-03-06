@@ -28,12 +28,12 @@ def calculate_align(length):
 	logger.debug('Calculation started...')
 
 	# time.sleep(30)  # 30 seconds
-	lp = lxml.landxml()	# landxml parser 정의
-	model = lp.load('./landxml_railway_sample.xml')	 # railway sample에는 chain이 있음.
-	lp.save('output_landxml.json')	# landxml 파일을 json 파일로 변환해 저장
+	lp = lxml.landxml()	
+	model = lp.load('./landxml_railway_sample.xml')	
+	lp.save('output_landxml.json')
 
-	cm = civil_model(model)	# 선형 계산을 위한 모델 정의
-	cm.initialize()			# 선형 계산 정보 생성
+	cm = civil_model(model)
+	cm.initialize()			
 
 	# count total number of stations
 	logger.debug(f'alignment count: {cm.alignment_count()}')

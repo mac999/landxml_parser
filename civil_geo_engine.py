@@ -789,7 +789,7 @@ class alignment:
 			index += 1
 
 	def show_offset_objects(self, object_point=(33934.512065292125, -57758.02867007709), offset_range=500):
-		sta_list, pline = self.get_polyline(10)		# 선형을 10미터 간격으로 좌표 생성
+		sta_list, pline = self.get_polyline(10)		# Generate coordinates at 10-meter intervals along the alignment
 
 		# Plot the alignment
 		import matplotlib.pyplot as plt

@@ -9,21 +9,21 @@ import landxml_parser as lxml, civil_geo_engine as cge
 from civil_geo_engine import civil_model
 
 def test_polyline_grid(cm):
-	align = cm.get_alignment(0)	# 첫번째 선형 얻기
+	align = cm.get_alignment(0)	# Get the first alignment
 	if align == None:
 		print("No alignment")
 		return
 	align.show_polyline()
 
 def main():
-	lp = lxml.landxml()	# landxml parser 정의
-	# model = lp.load('./landxml_railway_sample.xml')	# landxml 파일 로딩
+	lp = lxml.landxml()	# Define landxml parser
+	# model = lp.load('./landxml_railway_sample.xml')	# Load landxml file
 	model = lp.load('./landxml_road_sample.xml')	 
 	# print(model)
-	lp.save('output_landxml.json')	# landxml 파일을 json 파일로 변환해 저장
+	lp.save('output_landxml.json')	# Convert landxml file to json and save
 
-	cm = civil_model(model)	# 선형 계산을 위한 모델 정의
-	cm.initialize()			# 선형 계산 정보 생성
+	cm = civil_model(model)	# Define model for alignment calculation
+	cm.initialize()			# Generate alignment calculation information
 
 	test_polyline_grid(cm)
 	

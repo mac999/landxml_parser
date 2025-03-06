@@ -7,7 +7,7 @@ def main():
     tm_y = -58031.54067
 
     print("Input coordinates (TM):", tm_x, tm_y)
-    grs80_x, grs80_y = cge.convert_coordinates(tm_x, tm_y) # from_crs='epsg:2097', to_crs='epsg:4326'): # 중부원점 TM 좌표계. https://www.osgeo.kr/17
+    grs80_x, grs80_y = cge.convert_coordinates(tm_x, tm_y) # from_crs='epsg:2097', to_crs='epsg:4326'): # Central origin TM coordinate system. https://www.osgeo.kr/17
     print("Transformed coordinates (GRS80):", grs80_x, grs80_y)
 
 if __name__ == "__main__":

@@ -9,7 +9,7 @@ import landxml_parser as lxml, civil_geo_engine as cge
 from civil_geo_engine import civil_model
 
 def plot_xsection(cm):
-	align = cm.get_alignment(0)	# 첫번째 선형 얻기
+	align = cm.get_alignment(0)	
 	if align == None:
 		print("No alignment")
 		return
@@ -37,12 +37,12 @@ def plot_xsection(cm):
 	input()
 
 def main():
-	lp = lxml.landxml()	# landxml parser 정의
-	model = lp.load('./landxml_railway_sample.xml')	# landxml 파일 로딩
+	lp = lxml.landxml()
+	model = lp.load('./landxml_railway_sample.xml')	
 	# model = lp.load('./landxml_road_sample.xml')	 
 
-	cm = civil_model(model)	# 선형 계산을 위한 모델 정의
-	cm.initialize()			# 선형 계산 정보 생성
+	cm = civil_model(model)	
+	cm.initialize()			
 
 	plot_xsection(cm)
 	

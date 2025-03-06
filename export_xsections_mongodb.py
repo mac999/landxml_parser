@@ -58,8 +58,8 @@ def test():
 
 	start = time.time()
 
-	cm = civil_model(model)	# 선형 계산을 위한 모델 정의
-	cm.initialize()			# 선형 계산 정보 생성
+	cm = civil_model(model)	
+	cm.initialize()			
 	aligns = cm.get_alignments()
 
 	export_xsection(cm, aligns)
