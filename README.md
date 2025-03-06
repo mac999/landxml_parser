@@ -5,18 +5,18 @@ This project includes LandXML parser, civil model server and web viewer.
 - Civil model web viewer to support visualization for landxml in web
 
 <p align="center">
-<img height="200" src="https://github.com/mac999/landxml_parser/blob/main/civil3d_landxml.PNG"/><img height="200" src="https://github.com/mac999/landxml_parser/blob/main/landxml_sample.PNG"/>
-<img height="200" src="https://github.com/mac999/landxml_parser/blob/main/json_file.PNG"/>
+<img height="200" src="https://github.com/mac999/landxml_parser/blob/main/doc/civil3d_landxml.PNG"/><img height="200" src="https://github.com/mac999/landxml_parser/blob/main/doc/landxml_sample.PNG"/>
+<img height="200" src="https://github.com/mac999/landxml_parser/blob/main/doc/json_file.PNG"/>
 </p>
 
 It is easy to develop converter from LandXML to database, file such as JSON, MongoDB, sqlite etc.</br>
 <p align="center">
-<img height="100" src="https://github.com/mac999/landxml_parser/blob/main/landxml_excel.PNG"/></br>
+<img height="100" src="https://github.com/mac999/landxml_parser/blob/main/doc/landxml_excel.PNG"/></br>
 <p>
 
 By using LandXML parser, web-based model viewer, converter, application can be developed like below.</br> 
 <p align="center">
-<a href="https://www.youtube.com/watch?v=TtWs6Bs8az0"><img height="300" src="https://github.com/mac999/landxml_parser/blob/main/demo_1.PNG"/></a>
+<a href="https://www.youtube.com/watch?v=TtWs6Bs8az0"><img height="300" src="https://github.com/mac999/landxml_parser/blob/main/doc/demo_1.PNG"/></a>
 </p>
 
 # install 
