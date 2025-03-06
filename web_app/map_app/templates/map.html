@@ -1,0 +1,343 @@
+<!--
+  title: data export module
+  author: kang taewook
+  email: laputa99999@gmail.com
+  description: landxml civil model map example    
+-->
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Simple Map</title>
+        <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+        <style>
+            /* Set the size of the div element that contains the map */
+            #map {
+                width: 70%;  /* The width is the full width of the web page */
+            }          
+            /* Style for the transparent box */
+            .transparent-box {
+                background-color: white;
+                opacity: 0.5;
+                padding: 10px;
+            }
+            /* Style for the control containing the button */
+            .leaflet-control {
+                background: white;
+                padding: 10px;
+            } 
+            .leaflet-tooltip::before {
+                border: none;
+            }
+            .leaflet-tooltip {
+                background-color: transparent;
+                border: none;
+                box-shadow: none;
+                color: rgb(255, 226, 121); /* #FFA500; light orange. white; */
+            }                        
+        </style>
+        <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/leaflet-label@0.2.1-0/dist/leaflet.label.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet-label@0.2.1-0/dist/leaflet.label.min.css">        
+        <script>
+            // global member
+            var tooltips = [];
+
+            function update_tooltips_visibility(zoomlevel) {
+                for (var i = 0; i < tooltips.length; i++) {
+                    if (zoomlevel <= 16) {
+                        tooltips[i]._container.style.display = 'none';
+                    } else {
+                        tooltips[i]._container.style.display = 'block';
+                    }
+                }
+            }
+
+            function translate_position(geojsonData, x, y) {
+                var translatedGeojsonData = JSON.parse(JSON.stringify(geojsonData)); // Deep copy the GeoJSON object
+
+                translatedGeojsonData.features.forEach(function(feature) {
+                    feature.geometry.coordinates.forEach(function(coordinate) {
+                        coordinate[0] += x; // Translate longitude
+                        coordinate[1] += y; // Translate latitude
+                    });
+                });
+
+                return translatedGeojsonData;
+            }
+
+            function getRandomColor() {
+                var letters = '0123456789ABCDEF';
+                var color = '#';
+                for (var i = 0; i < 6; i++) {
+                    color += letters[Math.floor(Math.random() * 16)];
+                }
+                return color;
+            }
+
+            function transform_xsec_point(x, y, screen_height, scale=6.0, origin={x: 40, y: 12}) {
+                var point = {};
+                point.x = (x + origin.x) * scale;
+                point.y = (y + origin.y) * scale;
+                point.y = screen_height - point.y;
+                return point;
+            }
+
+            var max_station_count = 0;
+            var current_sta_index = 0;
+            async function click_xsection_line(e) {
+                var line = e.target;
+                var response = await fetch(`/show_test_alignment_xsections_parts_data?sta_index=${line.options.custom_index}`);
+                var data = await response.json();
+                
+                current_sta_index = line.options.custom_index;
+
+                document.getElementById('output_xy').value = JSON.stringify(data, null, 2);
+
+                var svgDiv = document.getElementById('canvas_xsec');
+                while (svgDiv.firstChild) {
+                    svgDiv.removeChild(svgDiv.firstChild);
+                }
+
+                if (data.length > 0) {
+                    var xsec_name = data[0].xsec_name;
+                    var text = document.createElementNS("http://www.w3.org/2000/svg", 'text');
+                    text.setAttribute('x', '10');   
+                    text.setAttribute('y', '30');   
+                    text.setAttribute('font-size', '10');   
+                    text.textContent = xsec_name;
+                    svgDiv.appendChild(text);
+                }
+
+                var part_index = 0;
+                var polyline = document.createElementNS("http://www.w3.org/2000/svg", 'polyline');
+                polyline.style.fill = 'none';
+                polyline.style.stroke = 'green';
+                polyline.style.strokeWidth = '1px';
+
+                for (var i = 0; i < data.length - 1; i++) {
+                    var xsec_name = data[i].xsec_name;
+                    var cur_part_index = data[i].part_index;
+                    var part_name = data[i].part_name;
+                    
+                    if (cur_part_index != part_index) {
+                        svgDiv.appendChild(polyline);
+
+                        polyline = document.createElementNS("http://www.w3.org/2000/svg", 'polyline');
+                        polyline.style.fill = 'none';
+                        polyline.style.stroke = part_name.toLowerCase().includes('top') ? 'red' : 'green';
+                        polyline.style.strokeWidth = '1px';
+
+                        part_index = cur_part_index;
+                        continue;
+                    }
+
+                    var point1 = transform_xsec_point(data[i].x, data[i].y, svgDiv.clientHeight);
+                    var point2 = svgDiv.createSVGPoint();
+                    point2.x = point1.x;
+                    point2.y = point1.y;
+                    polyline.points.appendItem(point2);
+                }
+                svgDiv.appendChild(polyline);
+            }
+
+            var sensor_histogram_chart = null;
+            function update_histogram_chart() {
+                var ctx = document.getElementById('histogram_chart').getContext('2d');
+                
+                if (sensor_histogram_chart != null) {
+                    sensor_histogram_chart.destroy();
+                }
+
+                var sensor_dataset = Array(6).fill().map(() => Math.round(Math.random() * 100));
+
+                sensor_histogram_chart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['temp', 'strain', 'pass', 'compact', 'rut', 'speed'],  
+                        datasets: [{
+                            label: 'sensor data',
+                            data: sensor_dataset,  
+                            backgroundColor: [
+                                'rgba(255, 99, 132, 0.2)',
+                                'rgba(54, 162, 235, 0.2)',
+                                'rgba(255, 206, 86, 0.2)',
+                                'rgba(75, 192, 192, 0.2)',
+                                'rgba(153, 102, 255, 0.2)',
+                                'rgba(255, 159, 64, 0.2)'
+                            ],
+                            borderColor: [
+                                'rgba(255, 99, 132, 1)',
+                                'rgba(54, 162, 235, 1)',
+                                'rgba(255, 206, 86, 1)',
+                                'rgba(75, 192, 192, 1)',
+                                'rgba(153, 102, 255, 1)',
+                                'rgba(255, 159, 64, 1)'
+                            ],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });    
+            }
+
+            document.addEventListener("DOMContentLoaded", function() {
+                var map = L.map('map').setView([37.5665, 126.9780], 8);
+
+                L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                    maxZoom: 19,
+                    attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+                }).addTo(map);
+
+                var poi = L.marker([38.116495091298056, 127.0876979827881]).addTo(map); // Point of interest
+                poi.on('click', function() {
+                    alert('You clicked the point of interest!');
+                });
+
+                document.getElementById('load-align').addEventListener('click', function() {
+                    fetch('/show_test_alignment_data')  // replace '/get-data' with the URL of your Django view
+                        .then(response => response.json())
+                        .then(data => {
+                            var data_text = JSON.stringify(data, null, 2);
+                            document.getElementById('output').value = data_text;
+                            
+                            var point_list = data.map(item => [item.x, item.y]);
+                            document.getElementById('output_xy').value = JSON.stringify(point_list, null, 2);
+                            var polyline = L.polyline(point_list, {color: 'red'}).addTo(map);
+
+                            var offset_point_list = data.map(item => [item.offset_x, item.offset_y]);
+                            
+                            max_station_count = data.length;
+                            for (var i = 0; i < offset_point_list.length; i++) {
+                                var line = L.polyline([point_list[i], offset_point_list[i]], {color: 'orange', weight: 5, custom_index: i}).addTo(map);
+
+                                // line.bindPopup(createPopupContent(line));
+                                line.on('click', click_xsection_line);
+
+                                var angle = Math.atan2(offset_point_list[i][1] - point_list[i][1], offset_point_list[i][0] - point_list[i][0]) * 180 / Math.PI;
+
+                                var sta_text = data[i].name
+                                var tooltip = L.tooltip({ permanent: true, direction: 'right' }).setLatLng(point_list[i]).setContent(sta_text).addTo(map);
+                                tooltips.push(tooltip);
+                            }
+
+                            var zoomlevel = map.getZoom();
+                            update_tooltips_visibility(zoomlevel);
+
+                            map.fitBounds(polyline.getBounds());
+                        })
+                    .catch(error => console.error('Error:', error));                    
+                });
+
+                document.getElementById('load-align-block').addEventListener('click', function() {
+                    fetch('/show_test_alignment_blocks_data')  // replace '/get-data' with the URL of your Django view
+                        .then(response => response.json())
+                        .then(data => {
+                            var data_text = JSON.stringify(data, null, 2);
+                            document.getElementById('output').value = data_text;
+                                                              
+                            for (var i = 0; i < data.length; i++) {
+                                var item = data[i];
+                                var p1_x = item.p1_x;
+                                var p1_y = item.p1_y;
+                                var p2_x = item.p2_x;
+                                var p2_y = item.p2_y;
+                                var p3_x = item.p3_x;
+                                var p3_y = item.p3_y;
+                                var p4_x = item.p4_x;
+                                var p4_y = item.p4_y;
+                                var vertices = [[p1_x, p1_y], [p2_x, p2_y], [p3_x, p3_y], [p4_x, p4_y]];
+
+                                col = getRandomColor();
+                                var polygon = L.polygon(vertices, {color: col, fillOpacity: 0.5, weight: 1}).addTo(map);
+
+                                var width1 = item.width1;
+                                var width2 = item.width2;
+                                var cx = item.cx;
+                                var cy = item.cy;
+
+                                var maxRadius = Math.abs(width2 - width1) / 4;
+                                var randomRadius = Math.random() * maxRadius;
+
+                                var circle = L.circle([cx, cy], {color: 'black', fillColor: 'red', fillOpacity: 0.5, weight: 1, radius: randomRadius}).addTo(map); 
+                                
+                                circle.on('click', function(e) {
+                                    update_histogram_chart();    
+                                });                                
+                            } 
+                        })
+                    .catch(error => console.error('Error:', error));
+                });
+
+                map.on('zoomend', function() {
+                    var zoomlevel = map.getZoom();
+                    update_tooltips_visibility(zoomlevel);
+                });
+
+                document.getElementById('next-chain').addEventListener('click', function() {
+                    var e = {};
+                    e.target = {};
+                    e.target.options = {};
+                    e.target.options.custom_index = current_sta_index + 1;
+
+                    click_xsection_line(e);
+                });
+
+                document.getElementById('prev-chain').addEventListener('click', function() {
+                    var e = {};
+                    e.target = {};
+                    e.target.options = {};
+                    e.target.options.custom_index = current_sta_index - 1;
+                    if (e.target.options.custom_index < 0) {
+                        e.target.options.custom_index = 0;
+                    }
+
+                    click_xsection_line(e);
+                });
+                
+                // Add click event to the map
+                /* map.on('click', function(e) {
+                    var coord = e.latlng;
+                    var lat = coord.lat;
+                    var lng = coord.lng;
+                    alert("You clicked the map at latitude: " + lat + " and longitude: " + lng);
+                }); */
+
+                // zoom the map
+                map.setView(poi.getLatLng(), 15); // map.fitBounds(polyline.getBounds(), {maxZoom: 18});
+            });
+        </script>
+    </head>
+    <body>
+        <div style="display: flex; height: 60vh;">
+            <div id="map" style="flex: 60%;"></div>
+            <div style="flex: 1; padding-left: 10px; display: flex; flex-direction: column;">
+                <div style="height: 50%;">
+                    <textarea id="output" style="height: 100%; width: 100%;"></textarea>
+                </div>       
+                <div style="height: 50%;">
+                    <textarea id="output_xy" style="height: 100%; width: 100%;"></textarea>
+                </div> 
+            </div>
+        </div>
+        <div>
+            <button id="load-align">Load test road alignment</button>
+            <button id="load-align-block">Load test road blocks</button>
+            <button id="next-chain">Next cross section</button>
+            <button id="prev-chain">Prev cross section</button>
+        </div>        
+        <div style="display: flex; height: 30vh;">
+            <svg id="canvas_xsec" style="border:1px solid #d3d3d3; width: 50%; height: 30vh;">
+            </svg>            
+            <div id="sensor_histogram" style="border:1px solid #d3d3d3; width: 50%; height: 30vh;">
+                <canvas id="histogram_chart"></canvas>            
+            </div>        
+        </div>
+    </body>
+</html>

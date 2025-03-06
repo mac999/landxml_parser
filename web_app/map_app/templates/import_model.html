@@ -1,0 +1,141 @@
+<!--
+  title: data export module
+  author: kang taewook
+  email: laputa99999@gmail.com
+  description: landxml civil model map example    
+-->
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Upload Model</title>
+        <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+        <style>
+            /* Set the size of the div element that contains the map */
+            #map {
+                width: 70%;  /* The width is the full width of the web page */
+            }          
+            /* Style for the transparent box */
+            .transparent-box {
+                background-color: white;
+                opacity: 0.5;
+                padding: 10px;
+            }
+            /* Style for the control containing the button */
+            .leaflet-control {
+                background: white;
+                padding: 10px;
+            } 
+            .leaflet-tooltip::before {
+                border: none;
+            }
+            .leaflet-tooltip {
+                background-color: transparent;
+                border: none;
+                box-shadow: none;
+                color: rgb(255, 226, 121); /* #FFA500; light orange. white; */
+            }                        
+        </style>      
+        <link 	href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" 
+        rel="stylesheet" 
+        integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" 
+        crossorigin="anonymous">
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/leaflet-label@0.2.1-0/dist/leaflet.label.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet-label@0.2.1-0/dist/leaflet.label.min.css">        
+        </style>
+        <script>
+            // global member
+            var tooltips = [];
+
+            function update_tooltips_visibility(zoomlevel) {
+                for (var i = 0; i < tooltips.length; i++) {
+                    if (zoomlevel <= 16) {
+                        tooltips[i]._container.style.display = 'none';
+                    } else {
+                        tooltips[i]._container.style.display = 'block';
+                    }
+                }
+            }
+
+            document.addEventListener("DOMContentLoaded", function() {
+                var map = L.map('map').setView([37.5665, 126.9780], 8);
+
+                L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                    maxZoom: 19,
+                    attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+                }).addTo(map);
+
+                var poi = L.marker([38.116495091298056, 127.0876979827881]).addTo(map); // Point of interest
+                poi.on('click', function() {
+                    alert('You clicked the point of interest!');
+                });
+
+                document.getElementById('load-align').addEventListener('click', function() {
+                    fetch('/show_test_alignment_data')  // replace '/get-data' with the URL of your Django view
+                        .then(response => response.json())
+                        .then(data => {
+                            var data_text = JSON.stringify(data, null, 2);
+                            document.getElementById('output').value = data_text;
+                            
+                            var point_list = data.map(item => [item.x, item.y]);
+                            document.getElementById('output_xy').value = JSON.stringify(point_list, null, 2);
+                            var polyline = L.polyline(point_list, {color: 'red'}).addTo(map);
+
+                            var offset_point_list = data.map(item => [item.offset_x, item.offset_y]);
+                            
+                            max_station_count = data.length;
+                            for (var i = 0; i < offset_point_list.length; i++) {
+                                var line = L.polyline([point_list[i], offset_point_list[i]], {color: 'orange', weight: 5, custom_index: i}).addTo(map);
+
+                                var angle = Math.atan2(offset_point_list[i][1] - point_list[i][1], offset_point_list[i][0] - point_list[i][0]) * 180 / Math.PI;
+
+                                var sta_text = data[i].name
+                                var tooltip = L.tooltip({ permanent: true, direction: 'right' }).setLatLng(point_list[i]).setContent(sta_text).addTo(map);
+                                tooltips.push(tooltip);
+                            }
+
+                            var zoomlevel = map.getZoom();
+                            update_tooltips_visibility(zoomlevel);
+
+                            map.fitBounds(polyline.getBounds());
+                        })
+                    .catch(error => console.error('Error:', error));                    
+                });
+
+                map.on('zoomend', function() {
+                    var zoomlevel = map.getZoom();
+                    update_tooltips_visibility(zoomlevel);
+                });
+           
+                map.setView(poi.getLatLng(), 15); 
+            });
+        </script>
+    </head>
+    <body>
+        <div style="display: flex; height: 60vh;">
+            <div id="map" style="flex: 60%;"></div>
+            <div style="flex: 1; padding-left: 10px; display: flex; flex-direction: column;">
+                <div style="height: 50%;">
+                    <textarea id="output" style="height: 100%; width: 100%;"></textarea>
+                </div>       
+                <div style="height: 50%;">
+                    <textarea id="output_xy" style="height: 100%; width: 100%;"></textarea>
+                </div> 
+            </div>
+        </div>
+        <div>
+            <form method="POST" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div>
+                  {{form}}
+                </div>
+                <button type="submit">Submit</button>
+            </form>
+            <button id="load-align">Load test road alignment</button>
+        </div>        
+    </body>
+</html>
