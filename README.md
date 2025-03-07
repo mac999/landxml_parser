@@ -21,7 +21,7 @@ By using LandXML parser, web-based model viewer, converter, application can be d
 <a href="https://www.youtube.com/watch?v=TtWs6Bs8az0">movie</a>
 </p>
 
-# install 
+# installation 
 ## landxml parser 
 ```bash
 pip install pandas numpy matplotlib 
@@ -56,13 +56,13 @@ python manage.py runserver
 - TBD: TIN, clothoid etc 
 
 ---
-# database export and test tools 
+# database export and test utiltiy tools 
 This repository contains Python scripts for exporting and processing civil engineering alignment data from LandXML. The scripts support **SQLite** and **MongoDB** databases and include test modules for verifying calculations and data transformations.
 ## prepare
 install the below program.
 - [MongoDB](https://www.mongodb.com/try/download/community)
 
-## 📂 Project Structure
+## 📂 program file structure
 ```
 📦 Civil_Model_Export
 ├── export_sqlite.py              # Exports alignment data to SQLite
@@ -204,7 +204,7 @@ install the below program.
 | `export_mongodb.py` | MongoDB | Exports **alignments and blocks** to MongoDB. |
 
 
-## **Test Scripts**
+## **Test Program**
 | Script | Purpose |
 |--------|---------|
 | `test_road_block_grid.py` | Tests polyline and block grid visualization. |
