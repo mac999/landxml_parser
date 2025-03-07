@@ -1,9 +1,9 @@
 # landxml parser, civil model server and civil model web viewer
 This project includes LandXML parser (ver 0.3), civil model generation from LandXML, civil model server and web viewer. 
 - LandXML parser to read alignments, cross sections, vertical alignments and convert JSON, excel.
-- Civil model server to support OpenAPI
-- Civil model web viewer to support visualization for landxml in web
-- Export landxml to sqlite, mongodb
+- Export landxml to sqlite, mongodb with test program.
+- Civil model server to support OpenAPI as demonstration.
+- Civil model web viewer to support visualization for landxml in web as demonstration.
 
 <p align="center">
 <img height="200" src="https://github.com/mac999/landxml_parser/blob/main/doc/civil3d_landxml.PNG"/><img height="200" src="https://github.com/mac999/landxml_parser/blob/main/doc/landxml_sample.PNG"/>
@@ -20,6 +20,12 @@ By using LandXML parser, web-based model viewer, converter, application can be d
 <img height="500" src="https://github.com/mac999/landxml_parser/blob/main/doc/map.gif"/></br>
 <a href="https://www.youtube.com/watch?v=TtWs6Bs8az0">movie</a>
 </p>
+
+# version history
+- 0.1: Sep 2023. draft version. xml parser
+- 0.2: Feb 2024. landxml parser was released. support alignment, cross section, profile 
+- 0.3: Mar 2025. Open API server and web viewer for landxml as demo was released
+- TBD: TIN, clothoid etc 
 
 # installation 
 ## landxml parser 
@@ -71,21 +77,6 @@ def main():
 	test_polyline_grid(cm)
 ```
 
-## Open API civil model server and client as demo
-This Open API server is demo version to show how to make server using landxml parser. It uses ./landxml_road_sample.xml file for demonstration. 
-- run the below command and visit URL [http://127.0.0.1:8001](http://127.0.0.1:8001/)
-```bash
-uvicorn open_api_server:app --reload --port 8001 --ws-max-size 16777216
-```
-It supports the below
-- http://127.0.0.1:8001/v1/calc/align: end point to test massive calculation about landxml model
-- http://127.0.0.1:8001/ws/align: end point to receive the large volume JSON dataset of landxml
-
-To run client, execute the below, the two end points will be tested. 
-```bash
-python open_api_client_call_api.py
-```
-
 ## civil model web viewer as demo
 You can run the web viewer of landxml as demo. 
 - run the below command and visit URL [http://127.0.0.1:8000/map](http://127.0.0.1:8000/map/)
@@ -103,11 +94,20 @@ In addition, the web viewer supports
 - http://127.0.0.1:8000/show_test_alignment_blocks_data/: show test alignment blocks data 
 - http://127.0.0.1:8000/show_test_alignment_xsections_parts_data/: show test alignment xsections parts data 
 
-# version history
-- 0.1: Sep 2023. draft version. xml parser
-- 0.2: Feb 2024. landxml parser was released. support alignment, cross section, profile 
-- 0.3: Mar 2025. web viewer for landxml was released
-- TBD: TIN, clothoid etc 
+## Open API civil model server and client as demo
+This Open API server is demo version to show how to make server using landxml parser. It uses ./landxml_road_sample.xml file for demonstration. 
+- run the below command and visit URL [http://127.0.0.1:8001](http://127.0.0.1:8001/)
+```bash
+uvicorn open_api_server:app --reload --port 8001 --ws-max-size 16777216
+```
+It supports the below
+- http://127.0.0.1:8001/v1/calc/align: end point to test massive calculation about landxml model
+- http://127.0.0.1:8001/ws/align: end point to receive the large volume JSON dataset of landxml
+
+To run client, execute the below, the two end points will be tested. 
+```bash
+python open_api_client_call_api.py
+```
 
 ---
 # database export and test utiltiy tools 
