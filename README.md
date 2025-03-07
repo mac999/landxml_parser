@@ -85,7 +85,10 @@ You can run the web viewer of landxml as demo.
 cd web_app
 python manage.py runserver
 ```
-To upload your landxml file into MongoDB, visit http://127.0.0.1:8000/import_model/ and upload your landxml file. In addition, the web viewer supports 
+To upload your landxml file into MongoDB, visit http://127.0.0.1:8000/import_model/ and upload your landxml file. </br>
+<img height="500" src="https://github.com/mac999/landxml_parser/blob/main/doc/mongodb.PNG"/></br>
+
+In addition, the web viewer supports 
 - http://127.0.0.1:8000/import_model/: import model files into MongoDB
 - http://127.0.0.1:8000/map/: show map
 - http://127.0.0.1:8000/show_test_alignment_data/: show test alignment data 
