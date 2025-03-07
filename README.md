@@ -85,6 +85,12 @@ After executing the model server, you can run the web viewer of landxml as demo.
 cd web_app
 python manage.py runserver
 ```
+In addition, the web viewer supports 
+- http://127.0.0.1:8000/map/: show map
+- http://127.0.0.1:8000/show_test_alignment_data/: show test alignment data 
+- http://127.0.0.1:8000/show_test_alignment_blocks_data/: show test alignment blocks data 
+- http://127.0.0.1:8000/show_test_alignment_xsections_parts_data/: show test alignment xsections parts data 
+- http://127.0.0.1:8000/import_model/: import model files 
 
 # version history
 - 0.1: Sep 2023. draft version. xml parser
