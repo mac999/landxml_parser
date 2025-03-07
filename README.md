@@ -24,11 +24,11 @@ By using LandXML parser, web-based model viewer, converter, application can be d
 # installation 
 ## landxml parser 
 ```bash
-pip install pandas numpy matplotlib 
+pip install pandas numpy matplotlib openpyxl Pillow plotly pyquaternion regex scikit-learn scipy simplification tqdm zipp
 ```
 ## civil model web server and viewer 
 ```bash
-pip install django uvicorn
+pip install django uvicorn flask oauthlib pymongo
 ```
 
 # run
