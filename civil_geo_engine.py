@@ -1,7 +1,9 @@
 # title: civil information model
+# description: version 1.0. alignment calculation. line, arc combination support.
 # author: kang taewook
 # email: laputa99999@gmail.com
-# description: version 1.0. alignment calculation. line, arc combination support.
+# date: 2024.03.01
+# plan: float type calculation consideration, type support etc.
 # 
 import os, sys, re, json, random, traceback, math, pandas as pd, numpy as np, numpy as np
 import matplotlib.pyplot as plt
