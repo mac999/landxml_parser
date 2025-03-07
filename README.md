@@ -71,11 +71,19 @@ def main():
 	test_polyline_grid(cm)
 ```
 
-## Open API civil model server as demo
+## Open API civil model server and client as demo
 This Open API server is demo version to show how to make server using landxml parser. It uses ./landxml_road_sample.xml file for demonstration. 
 - run the below command and visit URL [http://127.0.0.1:8001](http://127.0.0.1:8001/)
 ```bash
 uvicorn open_api_server:app --reload --port 8001 --ws-max-size 16777216
+```
+It supports the below
+- http://127.0.0.1:8001/v1/calc/align: end point to test massive calculation about landxml model
+- http://127.0.0.1:8001/ws/align: end point to receive the large volume JSON dataset of landxml
+
+To run client, execute the below, the two end points will be tested. 
+```bash
+python open_api_client_call_api.py
 ```
 
 ## civil model web viewer as demo
