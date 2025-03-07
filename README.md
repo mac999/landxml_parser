@@ -71,26 +71,26 @@ def main():
 	test_polyline_grid(cm)
 ```
 
-## civil model web server as demo
-This server is demo version to show how to make server using landxml parser. It uses ./landxml_road_sample.xml file for demonstration. 
+## Open API civil model server as demo
+This Open API server is demo version to show how to make server using landxml parser. It uses ./landxml_road_sample.xml file for demonstration. 
 - run the below command and visit URL [http://127.0.0.1:8001](http://127.0.0.1:8001/)
 ```bash
 uvicorn open_api_server:app --reload --port 8001 --ws-max-size 16777216
 ```
 
 ## civil model web viewer as demo
-After executing the model server, you can run the web viewer of landxml as demo.
+You can run the web viewer of landxml as demo. 
 - run the below command and visit URL [http://127.0.0.1:8000/map](http://127.0.0.1:8000/map/)
 ```bash
 cd web_app
 python manage.py runserver
 ```
-In addition, the web viewer supports 
+To upload your landxml file into MongoDB, visit http://127.0.0.1:8000/import_model/ and upload your landxml file. In addition, the web viewer supports 
+- http://127.0.0.1:8000/import_model/: import model files into MongoDB
 - http://127.0.0.1:8000/map/: show map
 - http://127.0.0.1:8000/show_test_alignment_data/: show test alignment data 
 - http://127.0.0.1:8000/show_test_alignment_blocks_data/: show test alignment blocks data 
 - http://127.0.0.1:8000/show_test_alignment_xsections_parts_data/: show test alignment xsections parts data 
-- http://127.0.0.1:8000/import_model/: import model files 
 
 # version history
 - 0.1: Sep 2023. draft version. xml parser
