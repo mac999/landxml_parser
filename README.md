@@ -50,9 +50,9 @@ python manage.py runserver
 ```
 
 # version history
-- 0.1: draft version. xml parser
-- 0.2: landxml parser was released. support alignment, cross section, profile 
-- 0.3: web viewer for landxml was released
+- 0.1: Sep 2023. draft version. xml parser
+- 0.2: Feb 2024. landxml parser was released. support alignment, cross section, profile 
+- 0.3: Mar 2025. web viewer for landxml was released
 - TBD: TIN, clothoid etc 
 
 ---
