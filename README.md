@@ -26,6 +26,9 @@ By using LandXML parser, web-based model viewer, converter, application can be d
 ```bash
 pip install pandas numpy matplotlib openpyxl Pillow plotly pyquaternion regex scikit-learn scipy simplification tqdm zipp
 ```
+If you want to test sqlite database, install the sqlite3. If there is error sqlite package error, refer to the below page. 
+- [sqlite3 download](https://www.sqlite.org/download.html) to your python virtual environment or ananconda environment
+
 ## civil model web server and viewer 
 ```bash
 pip install django uvicorn flask oauthlib pymongo
@@ -69,11 +72,13 @@ def main():
 ```
 
 ## civil model web server 
+run the below command and visit URL [http://127.0.0.1:8001](http://127.0.0.1:8001/)
 ```bash
 uvicorn open_api_server:app --reload --port 8001 --ws-max-size 16777216
 ```
 
 ## civil model web viewer
+run the below command and visit URL [http://127.0.0.1:8000/map](http://127.0.0.1:8000/map/)
 ```bash
 cd web_app
 python manage.py runserver
