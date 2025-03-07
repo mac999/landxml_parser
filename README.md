@@ -71,14 +71,16 @@ def main():
 	test_polyline_grid(cm)
 ```
 
-## civil model web server 
-run the below command and visit URL [http://127.0.0.1:8001](http://127.0.0.1:8001/)
+## civil model web server as demo
+This server is demo version to show how to make server using landxml parser. It uses ./landxml_road_sample.xml file for demonstration. 
+- run the below command and visit URL [http://127.0.0.1:8001](http://127.0.0.1:8001/)
 ```bash
 uvicorn open_api_server:app --reload --port 8001 --ws-max-size 16777216
 ```
 
-## civil model web viewer
-run the below command and visit URL [http://127.0.0.1:8000/map](http://127.0.0.1:8000/map/)
+## civil model web viewer as demo
+After executing the model server, you can run the web viewer of landxml as demo.
+- run the below command and visit URL [http://127.0.0.1:8000/map](http://127.0.0.1:8000/map/)
 ```bash
 cd web_app
 python manage.py runserver
