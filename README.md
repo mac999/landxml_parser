@@ -37,6 +37,36 @@ pip install django uvicorn
 git clone https://github.com/mac999/landxml_parser
 python test_landxml_parser.py
 ```
+## API usage
+It's simple to use landxml parser. 
+- import landxml_parser, civil_model and civil_geo_engine
+- make landxml() and load landxml file
+- make civil model using the landxml dataset
+- initialize model to calculate the design parameters of it
+- use API like get_alignment, get point at station etc.
+```python
+import landxml_parser as lxml, civil_geo_engine as cge
+from civil_geo_engine import civil_model
+
+def test_polyline_grid(cm):
+	align = cm.get_alignment(0)	# Get the first alignment
+	if align == None:
+		print("No alignment")
+		return
+	align.show_polyline()
+
+def main():
+	lp = lxml.landxml()	# Define landxml parser
+	# model = lp.load('./landxml_railway_sample.xml')	# Load landxml file
+	model = lp.load('./landxml_road_sample.xml')	 
+	# print(model)
+	lp.save('output_landxml.json')	# Convert landxml file to json and save
+
+	cm = civil_model(model)	# Define model for alignment calculation
+	cm.initialize()			# Generate alignment calculation information
+
+	test_polyline_grid(cm)
+```
 
 ## civil model web server 
 ```bash
