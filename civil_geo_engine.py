@@ -1,16 +1,19 @@
 # title: civil information model
-# description: version 1.0. alignment calculation. line, arc combination support.
+# description: version 1.1. alignment calculation. line, arc combination support.
 # author: kang taewook
 # email: laputa99999@gmail.com
 # date: 2024.03.01
 # plan: float type calculation consideration, type support etc.
+# revision history:
+# 2025.10.24: alignment blocks cache for query performance improvement
 # 
-import os, sys, re, json, random, traceback, math, pandas as pd, numpy as np, numpy as np
+import os, sys, re, json, random, traceback, math, pandas as pd, numpy as np, numpy as np, pyproj
 import matplotlib.pyplot as plt
 import landxml_parser as lxml
+from rtree import index as rtree_index
+from tqdm import tqdm
 from scipy.spatial.distance import euclidean
 from nltk.tokenize import WhitespaceTokenizer
-import pyproj
 
 # geometry calculation functions
 sys.path.insert(0, os.path.dirname(os.getcwd()))
@@ -139,8 +142,8 @@ def center_point_of_polygon(vertices):
 
     return (centroid_x, centroid_y)
 
-def is_point_in_rect(point1, point2, perp):
-	return is_point_in_rectangle(point1[0], point1[1], point2[0], point2[1], perp[0], perp[1])
+def is_point_in_rect(point1, point2, query_point):
+	return is_point_in_rectangle(point1[0], point1[1], point2[0], point2[1], query_point[0], query_point[1])
 
 def is_point_in_rectangle(x1, y1, x2, y2, x, y):
     # Ensure that x1 <= x2 and y1 <= y2
@@ -499,16 +502,146 @@ class cross_section:
 			# index color
 			color = cmap(index / len(self._part_list))			
 			ax.plot(x, y, c=color, linestyle='-', linewidth=1)			
-	
+
+class alignment_blocks: # block cache
+	_blocks = []
+	_blocks_segments = []
+	_align = None
+	_index = None
+
+	def __init__(self, align):
+		self._align = align
+
+	def get_blocks_segments(self):
+		return self._blocks_segments
+
+	def update_blocks_segments(self, sta_resolution=10.0, begin_sta = 0.0, end_sta = 0.0, offset=-20.0, offset_step=10, max_offset=10):
+		if self._align == None:
+			return self._blocks_segments
+
+		self._blocks = self._align.get_block_points(sta_resolution, begin_sta, end_sta, offset, offset_step, max_offset)
+		offset_x, offset_y = 0, 0
+
+		self._blocks_segments = []
+		for block in tqdm(self._blocks):
+			index = block['index']
+			sta = block['sta']
+			width1 = block['width1']
+			width2 = block['width2']
+
+			km = sta / 1000.0
+			meter = sta % 1000.0
+			sta_name = f'{km:.0f}+{meter}' # 1+140, 2+250, 3+360, ...
+
+			vertics = block['vertices']
+			x = [position[0] for position in vertics]
+			y = [position[1] for position in vertics]
+			gsr80_points = convert_coordinates(x, y)
+			gsr80_points = [[x + offset_x, y + offset_y] for x, y in zip(gsr80_points[0], gsr80_points[1])]
+
+			center = block['center']
+			center_x, center_y = center
+			center_gsr80 = convert_coordinates([center_x], [center_y])
+			center_gsr80 = [center_gsr80[0][0] + offset_x, center_gsr80[1][0] + offset_y]
+
+			data = {
+				"index": index,
+				"name": sta_name,
+				'sta': float(sta),
+				"width1": width1,
+				"width2": width2,
+				"p1_x": gsr80_points[0][0],
+				"p1_y": gsr80_points[0][1],
+				"p2_x": gsr80_points[1][0],
+				"p2_y": gsr80_points[1][1],
+				"p3_x": gsr80_points[2][0],
+				"p3_y": gsr80_points[2][1],
+				"p4_x": gsr80_points[3][0],
+				"p4_y": gsr80_points[3][1],
+				"cx": center_gsr80[0],
+				"cy": center_gsr80[1]
+			}
+			self._blocks_segments.append(data)
+
+		self.create_index()
+
+		return self._blocks_segments, self._blocks
+
+	def create_index(self, index_capacity=100, leaf_capacity=100):
+		"""
+		Build a spatial index (R-tree) for block points (p1, p2, p3, p4).
+		Each block's corner points are indexed for fast bbox queries.
+		Uses rtree library (pip install rtree).
+		"""
+		if len(self._blocks_segments) == 0:
+			return None
+
+		# Create R-tree index. https://rtree.readthedocs.io/en/latest/
+		p = rtree_index.Property()
+		p.dimension = 2
+		p.index_capacity = index_capacity
+		p.leaf_capacity = leaf_capacity
+		p.near_minimum_overlap_factor = int(index_capacity / 2)
+		idx = rtree_index.Index(properties=p)
+
+		# Index each block's p1, p2, p3, p4 as points
+		for seg_index, block in enumerate(self._blocks_segments):
+			pts = [
+				(block['p1_x'], block['p1_y']),
+				(block['p2_x'], block['p2_y']),
+				(block['p3_x'], block['p3_y']),
+				(block['p4_x'], block['p4_y'])
+			]
+			for i, (x, y) in enumerate(pts):
+				# Insert as a point bbox (x, y, x, y), id is (block_id, i)
+				idx.insert(seg_index * 10 + i, (x, y, x, y), obj=seg_index)
+
+		self._index = idx
+		return self._index
+
+	def query_blocks(self, query_in_bbox, use_index=True):
+		if use_index and self._index != None:
+			# Use R-tree index for fast query
+			result_blocks = []
+			bbox = query_in_bbox
+			matches = self._index.intersection(bbox, objects=True)
+			seen_indices = set()
+			for match in matches:
+				block_index = match.object
+				if block_index not in seen_indices:
+					result_blocks.append(self._blocks_segments[block_index])
+					seen_indices.add(block_index)
+			return result_blocks
+
+		result_blocks = []
+		for block in self._blocks_segments:
+			p1 = (block['p1_x'], block['p1_y'])
+			p2 = (block['p2_x'], block['p2_y'])
+			p3 = (block['p3_x'], block['p3_y'])
+			p4 = (block['p4_x'], block['p4_y'])
+
+			query_pt1 = (query_in_bbox[0], query_in_bbox[1])
+			query_pt2 = (query_in_bbox[2], query_in_bbox[3])
+
+			if is_point_in_rect(query_pt1, query_pt2, p1) or is_point_in_rect(query_pt1, query_pt2, p2) or is_point_in_rect(query_pt1, query_pt2, p3) or is_point_in_rect(query_pt1, query_pt2, p4):
+				result_blocks.append(block)
+
+		return result_blocks
+
 class alignment:
 	_model_data = None
 	_align_data = None
 	_align_segments = []
 	_cross_sects = []
 
+	_alignment_blocks = None
+
 	def __init__(self, model, align_data):
 		self._model_data = model
 		self._align_data = align_data
+		self._align_segments = []
+		self._cross_sects = []
+		self._alignment_blocks = alignment_blocks(self)		
 
 	def initialize(self):
 		self._align_ips = []
@@ -709,6 +842,9 @@ class alignment:
 
 			offset += offset_step
 		return blocks
+
+	def get_alignment_blocks(self):
+		return self._alignment_blocks
 
 	def plot_offset_polyline(self, plt, ax, resolution, begin = 0.0, end = 0.0):
 		sta_list, pline = self.get_polyline(resolution, begin, end)		# 선형을 resolution미터 간격으로 좌표 생성
