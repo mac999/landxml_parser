@@ -275,7 +275,7 @@ install the below program.
 
 ---
 
-# 📩 contact
+# contact
 - **Author:** Kang Taewook  
 - **Email:** laputa99999@gmail.com  
 
