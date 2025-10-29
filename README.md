@@ -275,10 +275,10 @@ install the below program.
 
 ---
 
-# contact
+# Contact
 - **Author:** Kang Taewook  
 - **Email:** laputa99999@gmail.com  
 
-# ⚖️ License
+# License
 This project is licensed under the MIT License.
 
