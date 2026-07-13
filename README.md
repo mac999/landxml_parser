@@ -1,23 +1,24 @@
 # landxml parser, civil model server and civil model web viewer
-This project includes LandXML parser (ver 0.3), civil model generation from LandXML, civil model server and web viewer. 
+This project includes LandXML parser, civil model generation from LandXML, civil model server and web viewer. 
 - LandXML parser to read alignments, cross sections, vertical alignments and convert JSON, excel.
 - Export landxml to sqlite, mongodb with test program.
 - Civil model server to support OpenAPI as demonstration.
 - Civil model web viewer to support visualization for landxml in web as demonstration.
 
 <p align="center">
-<img height="200" src="https://github.com/mac999/landxml_parser/blob/main/doc/civil3d_landxml.PNG"/><img height="200" src="https://github.com/mac999/landxml_parser/blob/main/doc/landxml_sample.PNG"/>
-<img height="200" src="https://github.com/mac999/landxml_parser/blob/main/doc/json_file.PNG"/>
+<img height="200" src="./doc/civil3d_landxml.PNG"/><img height="200" src="./doc/landxml_sample.PNG"/>
+<img height="200" src="./doc/json_file.PNG"/>
 </p>
 
 It is easy to develop converter from LandXML to database, file such as JSON, MongoDB, sqlite etc.</br>
 <p align="center">
-<img height="100" src="https://github.com/mac999/landxml_parser/blob/main/doc/landxml_excel.PNG"/></br>
+<img height="100" src="./doc/clothoid.png"/>
+<img height="100" src="./doc/landxml_excel.PNG"/></br>
 <p>
 
 By using LandXML parser, web-based model viewer, converter, application can be developed like below.</br> 
 <p align="center">
-<img height="500" src="https://github.com/mac999/landxml_parser/blob/main/doc/map.gif"/></br>
+<img height="500" src="./doc/map.gif"/></br>
 <a href="https://www.youtube.com/watch?v=TtWs6Bs8az0">movie</a>
 </p>
 
@@ -25,8 +26,8 @@ By using LandXML parser, web-based model viewer, converter, application can be d
 - 0.1: Sep 2023. draft version. xml parser
 - 0.2: Feb 2024. landxml parser was released. support alignment, cross section, profile 
 - 0.3: Mar 2025. Open API server and web viewer for landxml as demo was released
-- TBD: TIN, clothoid etc 
-
+- 0.4: Clothoid support
+ 
 # installation 
 ## landxml parser 
 ```bash
@@ -85,7 +86,7 @@ cd web_app
 python manage.py runserver
 ```
 To upload your landxml file into MongoDB, visit http://127.0.0.1:8000/import_model/ and upload your landxml file. </br>
-<img width="800" src="https://github.com/mac999/landxml_parser/blob/main/doc/mongodb.PNG"/></br>
+<img width="800" src="./doc/mongodb.PNG"/></br>
 
 In addition, the web viewer supports 
 - http://127.0.0.1:8000/import_model/: import model files into MongoDB
