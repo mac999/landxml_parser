@@ -16,8 +16,9 @@ def main():
 	lp = lxml.landxml()	
 	# model = lp.load('./landxml_railway_sample.xml')	
 	# perp_object_point = (33934.512065292125, -57758.02867007709)
-	model = lp.load('./landxml_road_sample.xml')	
-	perp_object_point = (5373.0, 4946.0)
+	# model = lp.load('./landxml_road_sample.xml')	
+	model = lp.load('./landxml_road_cl_sample.xml')	
+	perp_object_point = (5100.0, 5000.0)
 	# print(model)
 	lp.save('output_landxml.json')	
 

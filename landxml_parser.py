@@ -93,16 +93,31 @@ class landxml:
 			pass
 		return None
 
+	def get_models_data(self):
+		return self._model_data
+
 	def save(self, fpath):
 		try:
 			if self._model_data == None:
-				return
+				return False
 			
+			if os.path.isfile(fpath):
+				os.remove(fpath)
 			with open(fpath, 'w') as json_file:
 				json.dump(self._model_data, json_file, indent = 2)
 		except Exception as e:
 			traceback.print_exc()
-			pass
+		return True
+
+	def load_json(self, fpath): # load json file
+		try:
+			if os.path.isfile(fpath):
+				with open(fpath, 'r') as json_file:
+					self._model_data = json.load(json_file)
+					return self._model_data
+		except Exception as e:
+			traceback.print_exc()
+		return None
 
 	def get_points_in_text(self, text):
 		tk = WhitespaceTokenizer()
@@ -153,7 +168,7 @@ class landxml:
 		for child in node:
 			tag, attrib, text, data = self.get_attrib_text(child)
 
-			if child.tag.find("Line") >= 0 or child.tag.find("Curve") >= 0:
+			if child.tag.find("Line") >= 0 or child.tag.find("Curve") >= 0 or child.tag.find("Spiral") >= 0:
 				model.append(data)
 				self.parsing_curve(child, data[tag]['list'])
 
@@ -292,12 +307,3 @@ class landxml:
 			traceback.print_exc()
 			pass			
 		return model
-	
-def test():
-	lxml = landxml()
-	model = lxml.load('sample.xml')
-	print(model)
-	lxml.save('output.json')
-
-if __name__ == "__main__":
-	test()

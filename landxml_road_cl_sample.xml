@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<LandXML xmlns="http://www.landxml.org/schema/LandXML-1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.landxml.org/schema/LandXML-1.2 http://www.landxml.org/schema/LandXML-1.2/LandXML-1.2.xsd" date="2026-07-13" time="10:00:00" version="1.2" language="English" readOnly="false">
+	<Units>
+		<Metric areaUnit="squareMeter" linearUnit="meter" volumeUnit="cubicMeter" temperatureUnit="celsius" pressureUnit="milliBars" angularUnit="decimal degrees" directionUnit="decimal degrees"></Metric>
+	</Units>
+	<Project name="clothoid alignment sample based on landxml_road_sample.xml"></Project>
+	<Application name="civil_geo_engine sample generator" desc="line-spiral-arc-spiral-line alignment" version="1.0" timeStamp="2026-07-13T10:00:00"></Application>
+	<Alignments name="Site 1">
+		<Alignment name="Main Road CL" length="960.000000000000" staStart="0." desc="line-clothoid-arc-clothoid-line">
+			<CoordGeom>
+				<Line dir="30.000000000000" length="300.000000000000">
+					<Start>4500.000000000000 5000.000000000000</Start>
+					<End>4759.807621135332 5150.000000000000</End>
+				</Line>
+				<Spiral length="80.000000000000" radiusStart="INF" radiusEnd="400.000000000000" rot="ccw" spiType="clothoid" constant="178.885438199983" theta="5.729577951308" totalX="79.920037028491" totalY="2.664762510717">
+					<Start>4759.807621135332 5150.000000000000</Start>
+					<PI>4806.019859579980 5176.680648305874</PI>
+					<End>4830.352784728756 5187.652266484913</End>
+				</Spiral>
+				<Curve rot="ccw" chord="197.923167403618" crvType="arc" delta="28.647889756541" dirStart="24.270422048692" dirEnd="355.622532292151" length="200.000000000000" radius="400.000000000000" tangent="102.136768488415">
+					<Start>4830.352784728756 5187.652266484913</Start>
+					<Center>4994.770307799261 4823.006029554706</Center>
+					<End>5025.301075223637 5221.839167897646</End>
+					<PI>4923.462255432536 5229.634952708139</PI>
+				</Curve>
+				<Spiral length="80.000000000000" radiusStart="400.000000000000" radiusEnd="INF" rot="ccw" spiType="clothoid" constant="178.885438199983" theta="5.729577951308" totalX="79.786802078520" totalY="5.327240557455">
+					<Start>5025.301075223637 5221.839167897646</Start>
+					<PI>5051.915299968832 5219.801842942023</PI>
+					<End>5104.448515045761 5210.437586977566</End>
+				</Spiral>
+				<Line dir="349.892954340842" length="300.000000000000">
+					<Start>5104.448515045761 5210.437586977566</Start>
+					<End>5399.792997353741 5157.791250255709</End>
+				</Line>
+			</CoordGeom>
+		</Alignment>
+	</Alignments>
+</LandXML>

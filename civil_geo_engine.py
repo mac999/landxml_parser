@@ -6,7 +6,8 @@
 # plan: float type calculation consideration, type support etc.
 # revision history:
 # 2025.10.24: alignment blocks cache for query performance improvement
-# 
+# 2026.07.13: clothoid (Spiral) segment support. line-spiral-arc-spiral-line alignment calculation.
+#
 import os, sys, re, json, random, traceback, math, pandas as pd, numpy as np, numpy as np, pyproj
 import matplotlib.pyplot as plt
 import landxml_parser as lxml
@@ -14,6 +15,8 @@ from rtree import index as rtree_index
 from tqdm import tqdm
 from scipy.spatial.distance import euclidean
 from nltk.tokenize import WhitespaceTokenizer
+from shapely.geometry import Point, LineString, Polygon
+from shapely import intersection
 
 # geometry calculation functions
 sys.path.insert(0, os.path.dirname(os.getcwd()))
@@ -71,6 +74,27 @@ def point_on_arc_at_length(start, center, end, radius, arc_length, sign):
 	y = center[1] + radius * math.sin(angle)
 
 	return x, y
+
+def clothoid_angle(s, k1, k2, length):
+	# tangent deflection angle at arc length s. curvature varies linearly from k1 to k2 over length.
+	return k1 * s + (k2 - k1) * s * s / (2.0 * length)
+
+def clothoid_local_point(s, k1, k2, length, steps=64):
+	# local clothoid coordinates at arc length s. tangent at s=0 is the local +x axis.
+	# x(s) = integral(cos(theta(t))), y(s) = integral(sin(theta(t))). Simpson integration.
+	if s <= 0.0:
+		return 0.0, 0.0
+	n = max(8, int(steps))
+	if n % 2 == 1:
+		n += 1
+	h = s / n
+	x = y = 0.0
+	for i in range(n + 1):
+		a = clothoid_angle(h * i, k1, k2, length)
+		w = 1.0 if (i == 0 or i == n) else (4.0 if i % 2 == 1 else 2.0)
+		x += w * math.cos(a)
+		y += w * math.sin(a)
+	return x * h / 3.0, y * h / 3.0
 
 def to_degree(radian):
 	return 180. * radian / math.pi
@@ -252,7 +276,7 @@ def sign_distance_on_line(line_point1, line_point2, point):
 	x2 = line_point2[0]
 	y2 = line_point2[1]
 
-	if x1 <= x2:
+	if math.fabs(x2 - x1) < _precision:	# vertical line
 		a = 1
 		b = 0
 		c = -x1
@@ -334,6 +358,31 @@ class align_segment:
 				return float(self._attrib['length'])
 			return 0.0
 
+		if self._type == "Spiral": # clothoid
+			if 'length' in self._attrib:
+				return float(self._attrib['length'])
+			return 0.0
+
+	def get_spiral_params(self):
+		# clothoid parameters. curvature sign follows the arc convention of this engine (rot == "ccw" -> negative).
+		# points order is Start, PI, End. tangent at Start heads to PI.
+		length = float(self._attrib['length'])
+
+		def to_curvature(radius_text):
+			radius_text = str(radius_text).upper()
+			if radius_text.find('INF') >= 0:
+				return 0.0
+			return 1.0 / float(radius_text)
+
+		k1 = to_curvature(self._attrib.get('radiusStart', 'INF'))
+		k2 = to_curvature(self._attrib.get('radiusEnd', 'INF'))
+		sign = -1.0 if self._attrib.get('rot', 'cw') == 'ccw' else 1.0
+
+		start = self._points[0]
+		pi_point = self._points[1]
+		start_angle = math.atan2(pi_point[1] - start[1], pi_point[0] - start[0])
+		return length, sign * k1, sign * k2, start, start_angle
+
 	def get_circle(self):
 		if self._points == None or len(self._points) == 0:
 			return None
@@ -380,7 +429,20 @@ class align_segment:
 				sign = -1.0
 			x, y = point_on_arc_at_length((x1, y1), (cx, cy), (x2, y2), float(self._attrib['radius']), target_station, sign)
 
-			return (x, y)	
+			return (x, y)
+
+		if self._type == "Spiral": # clothoid
+			if len(self._points) < 3:
+				return None
+
+			length, k1, k2, start, start_angle = self.get_spiral_params()
+			lx, ly = clothoid_local_point(target_station, k1, k2, length)
+
+			cos_a = math.cos(start_angle)
+			sin_a = math.sin(start_angle)
+			x = start[0] + lx * cos_a - ly * sin_a
+			y = start[1] + lx * sin_a + ly * cos_a
+			return (x, y)
 
 	def get_perp_points(self, object_point, offset_range):
 		if self._points == None or len(self._points) == 0:
@@ -412,7 +474,6 @@ class align_segment:
 			a1 = get_angle(c[0], c[1], self._points[0][0], self._points[0][1])
 			a2 = get_angle(c[0], c[1], self._points[2][0], self._points[2][1])
 			radius = euclidean(c, self._points[0])
-			dist = arc_length(a1, a2, radius)
 
 			perp_angle = get_angle(c[0], c[1], object_point[0], object_point[1])
 			perp = get_angle_point(c[0], c[1], perp_angle, radius)
@@ -422,8 +483,57 @@ class align_segment:
 			if self._attrib["rot"] == "ccw":
 				is_in_angles = is_in_angles == False
 				offset = -offset
+				dist = arc_diff(perp_angle, a1) * radius	# arc length from start to perp point. clockwise sweep
+			else:
+				dist = arc_diff(a1, perp_angle) * radius	# counterclockwise sweep
 			if is_in_angles and math.fabs(offset) <= offset_range:
 				return [dist, perp[0], perp[1], offset]
+			return None
+
+		if self._type == "Spiral": # clothoid
+			if len(self._points) < 3:
+				return None
+
+			length = self.get_length()
+
+			def dist_at(s):
+				p = self.get_station_position(s)
+				return euclidean(p, object_point)
+
+			# coarse sampling along the spiral, then ternary search refinement
+			n = max(16, int(length))
+			best_s = 0.0
+			best_d = dist_at(0.0)
+			for i in range(1, n + 1):
+				s = length * i / n
+				d = dist_at(s)
+				if d < best_d:
+					best_s, best_d = s, d
+
+			step = length / n
+			lo = max(0.0, best_s - step)
+			hi = min(length, best_s + step)
+			for _ in range(40):
+				m1 = lo + (hi - lo) / 3.0
+				m2 = hi - (hi - lo) / 3.0
+				if dist_at(m1) <= dist_at(m2):
+					hi = m2
+				else:
+					lo = m1
+			sta = (lo + hi) / 2.0
+
+			# reject when the projection clamps to the segment ends (object is beyond this segment)
+			if sta < _precision or sta > length - _precision:
+				return None
+
+			perp = self.get_station_position(sta)
+			ahead = self.get_station_position(min(sta + 0.001, length))
+			tangent = math.atan2(ahead[1] - perp[1], ahead[0] - perp[0])
+			dx = object_point[0] - perp[0]
+			dy = object_point[1] - perp[1]
+			offset = -(math.cos(tangent) * dy - math.sin(tangent) * dx)	# right side > 0.0 like line segment
+			if math.fabs(offset) <= offset_range:
+				return [sta, perp[0], perp[1], offset]
 			return None
 
 		return None
@@ -503,31 +613,34 @@ class cross_section:
 			color = cmap(index / len(self._part_list))			
 			ax.plot(x, y, c=color, linestyle='-', linewidth=1)			
 
-class alignment_blocks: # block cache
+class alignment_blocks_index: # block cache
 	_blocks = []
-	_blocks_segments = []
+	_blocks_cells = []
 	_align = None
 	_index = None
 
 	def __init__(self, align):
 		self._align = align
 
-	def get_blocks_segments(self):
-		return self._blocks_segments
+	def get_blocks_cells(self):
+		return self._blocks_cells
 
-	def update_blocks_segments(self, sta_resolution=10.0, begin_sta = 0.0, end_sta = 0.0, offset=-20.0, offset_step=10, max_offset=10):
+	def update_blocks_cells(self, sta_resolution=10.0, begin_sta = 0.0, end_sta = 0.0, offset=-20.0, offset_step=10, max_offset=10, convert_coord='', grid_method='sta_interval'):
 		if self._align == None:
-			return self._blocks_segments
+			return self._blocks_cells
 
-		self._blocks = self._align.get_block_points(sta_resolution, begin_sta, end_sta, offset, offset_step, max_offset)
+		self._blocks = []
+		
+		if grid_method == 'sta_interval':
+			self._blocks = self._align.get_block_points(sta_resolution, begin_sta, end_sta, offset, offset_step, max_offset)
+		else:
+			self._blocks = self._align.get_block_points_by_fixed_grid(sta_resolution, begin_sta, end_sta, offset, max_offset)
+
 		offset_x, offset_y = 0, 0
-
-		self._blocks_segments = []
+		self._blocks_cells = []
 		for block in tqdm(self._blocks):
 			index = block['index']
 			sta = block['sta']
-			width1 = block['width1']
-			width2 = block['width2']
 
 			km = sta / 1000.0
 			meter = sta % 1000.0
@@ -536,20 +649,23 @@ class alignment_blocks: # block cache
 			vertics = block['vertices']
 			x = [position[0] for position in vertics]
 			y = [position[1] for position in vertics]
-			gsr80_points = convert_coordinates(x, y)
-			gsr80_points = [[x + offset_x, y + offset_y] for x, y in zip(gsr80_points[0], gsr80_points[1])]
-
 			center = block['center']
-			center_x, center_y = center
-			center_gsr80 = convert_coordinates([center_x], [center_y])
-			center_gsr80 = [center_gsr80[0][0] + offset_x, center_gsr80[1][0] + offset_y]
+			
+			if convert_coord == 'gsr80':
+				gsr80_points = convert_coordinates(x, y)
+				gsr80_points = [[x + offset_x, y + offset_y] for x, y in zip(gsr80_points[0], gsr80_points[1])]
+
+				center_x, center_y = center
+				center_gsr80 = convert_coordinates([center_x], [center_y])
+				center_gsr80 = [center_gsr80[0][0] + offset_x, center_gsr80[1][0] + offset_y]
+			else:
+				gsr80_points = [[x + offset_x, y + offset_y] for x, y in zip(x, y)]					
+				center_gsr80 = [center[0] + offset_x, center[1] + offset_y]
 
 			data = {
 				"index": index,
 				"name": sta_name,
 				'sta': float(sta),
-				"width1": width1,
-				"width2": width2,
 				"p1_x": gsr80_points[0][0],
 				"p1_y": gsr80_points[0][1],
 				"p2_x": gsr80_points[1][0],
@@ -561,11 +677,11 @@ class alignment_blocks: # block cache
 				"cx": center_gsr80[0],
 				"cy": center_gsr80[1]
 			}
-			self._blocks_segments.append(data)
+			self._blocks_cells.append(data)
 
 		self.create_index()
 
-		return self._blocks_segments, self._blocks
+		return self._blocks_cells, self._blocks
 
 	def create_index(self, index_capacity=100, leaf_capacity=100):
 		"""
@@ -573,7 +689,7 @@ class alignment_blocks: # block cache
 		Each block's corner points are indexed for fast bbox queries.
 		Uses rtree library (pip install rtree).
 		"""
-		if len(self._blocks_segments) == 0:
+		if len(self._blocks_cells) == 0:
 			return None
 
 		# Create R-tree index. https://rtree.readthedocs.io/en/latest/
@@ -585,7 +701,7 @@ class alignment_blocks: # block cache
 		idx = rtree_index.Index(properties=p)
 
 		# Index each block's p1, p2, p3, p4 as points
-		for seg_index, block in enumerate(self._blocks_segments):
+		for seg_index, block in enumerate(self._blocks_cells):
 			pts = [
 				(block['p1_x'], block['p1_y']),
 				(block['p2_x'], block['p2_y']),
@@ -609,12 +725,12 @@ class alignment_blocks: # block cache
 			for match in matches:
 				block_index = match.object
 				if block_index not in seen_indices:
-					result_blocks.append(self._blocks_segments[block_index])
+					result_blocks.append(self._blocks_cells[block_index])
 					seen_indices.add(block_index)
 			return result_blocks
 
 		result_blocks = []
-		for block in self._blocks_segments:
+		for block in self._blocks_cells:
 			p1 = (block['p1_x'], block['p1_y'])
 			p2 = (block['p2_x'], block['p2_y'])
 			p3 = (block['p3_x'], block['p3_y'])
@@ -634,14 +750,14 @@ class alignment:
 	_align_segments = []
 	_cross_sects = []
 
-	_alignment_blocks = None
+	_alignment_blocks_index = None
 
 	def __init__(self, model, align_data):
 		self._model_data = model
 		self._align_data = align_data
 		self._align_segments = []
 		self._cross_sects = []
-		self._alignment_blocks = alignment_blocks(self)		
+		self._alignment_blocks_index = alignment_blocks_index(self)		
 
 	def initialize(self):
 		self._align_ips = []
@@ -747,6 +863,13 @@ class alignment:
 
 			print(str(sta) + ": " + str(x) + ", " + str(y))
 			sta += resolution
+		
+		if sta != length and end == 0.0: # make end point
+			x, y = self.get_station_position(length - 0.000001)
+			sta_list.append(length)
+			points.append((x, y))
+			print(str(length) + ": " + str(x) + ", " + str(y))
+
 		return sta_list, points
 	
 	def get_offset_polyline(self, resolution, offset, begin = 0.0, end = 0.0):
@@ -765,7 +888,7 @@ class alignment:
 			sta_list.append(sta)
 			points.append((x, y))
 
-			print(str(sta) + ": " + str(x) + ", " + str(y))
+			# print(str(sta) + ": " + str(x) + ", " + str(y))
 			sta += resolution
 		return sta_list, points
 
@@ -807,6 +930,83 @@ class alignment:
 
 		return object_sta_offset_list
 
+	def get_block_points_by_fixed_grid(self, resolution, begin_sta = 0.0, end_sta = 0.0, offset=-20.0, max_offset=10):  # from -20 to 10, 10 step, make blocks.
+		center_sta_list, center_pline = self.get_polyline(resolution, begin_sta, end_sta)		
+
+		boundary_pline = []
+		left_sta_list, left_pline = self.get_offset_polyline(resolution, offset, begin_sta, end_sta)
+		boundary_pline.extend(left_pline)
+
+		right_sta_list, right_pline = self.get_offset_polyline(resolution, max_offset, begin_sta, end_sta)
+		right_pline.reverse()  # reverse order for right pline to make clockwise boundary
+		boundary_pline.extend(right_pline)
+
+		# get max bbox
+		min_x = min([position[0] for position in boundary_pline])
+		max_x = max([position[0] for position in boundary_pline])
+		min_y = min([position[1] for position in boundary_pline])
+		max_y = max([position[1] for position in boundary_pline])
+
+		grid_x_count = int((max_x - min_x) / resolution) + 1
+		grid_y_count = int((max_y - min_y) / resolution) + 1
+
+		grid_size = resolution
+		blocks = []
+		for i in tqdm(range(grid_x_count)):
+			for j in range(grid_y_count):
+				grid_min_x = min_x + i * grid_size
+				grid_max_x = min_x + (i + 1) * grid_size
+				grid_min_y = min_y + j * grid_size
+				grid_max_y = min_y + (j + 1) * grid_size
+				grid_center_x = (grid_min_x + grid_max_x) / 2.0
+				grid_center_y = (grid_min_y + grid_max_y) / 2.0
+
+				# Shapely를 이용한 폴리곤 내부 점 검사 및 교차점 계산
+				# boundary_pline으로 Polygon 생성
+				boundary_polygon = Polygon(boundary_pline)
+				
+				# grid_center 점 생성
+				grid_center_point = Point(grid_center_x, grid_center_y)
+				
+				# grid_center에서 Y축 방향(수직) 100미터 길이의 선분 생성
+				# 위아래로 각각 50미터씩
+				vertical_line = LineString([
+					(grid_center_x, grid_center_y - 50.0),
+					(grid_center_x, grid_center_y + 50.0)
+				])
+				
+				# 수직선과 boundary_polygon의 교차점 계산
+				intersection_result = intersection(vertical_line, boundary_polygon)
+				
+				# grid_center가 폴리곤 내부에 있는지 검사
+				is_inside_boundary = boundary_polygon.contains(grid_center_point)
+				if is_inside_boundary == False:
+					continue
+
+				vertices = [(grid_min_x, grid_min_y), (grid_max_x, grid_min_y), (grid_max_x, grid_max_y), (grid_min_x, grid_max_y)]
+				center_position = (grid_min_x + grid_max_x) / 2.0, (grid_min_y + grid_max_y) / 2.0
+				# get station distance from center_position to center alignment with perpendicular distance as width
+				perp_point = self.get_perp_points(center_position, max_offset) 
+				if perp_point == None or len(perp_point) == 0:
+					block = {
+						"index": len(blocks),
+						"sta": 0.0,
+						"vertices": vertices,
+						"center": center_point_of_polygon(vertices),
+					}
+					blocks.append(block)
+					continue
+
+				block = {
+					"index": len(blocks),
+					"sta": perp_point[0][0],
+					"vertices": vertices,
+					"center": center_point_of_polygon(vertices),
+				}
+				blocks.append(block)
+						
+		return blocks	
+
 	def get_block_points(self, resolution, begin_sta = 0.0, end_sta = 0.0, offset=-20.0, offset_step=10, max_offset=10):  # from -20 to 10, 10 step, make blocks.
 		sta_list, pline = self.get_polyline(resolution, begin_sta, end_sta)		# 선형을 resolution미터 간격으로 좌표 생성
 
@@ -830,9 +1030,7 @@ class alignment:
 
 				block = {
 					"index": index,
-					"sta": sta_list[index],
-					"width1": offset,
-					"width2": offset + offset_step,
+					"sta": sta_list[index - 1],
 					"vertices": vertices,
 					"center": center_point_of_polygon(vertices),
 				}
@@ -843,10 +1041,10 @@ class alignment:
 			offset += offset_step
 		return blocks
 
-	def get_alignment_blocks(self):
-		return self._alignment_blocks
+	def get_alignment_blocks_index(self):
+		return self._alignment_blocks_index
 
-	def plot_offset_polyline(self, plt, ax, resolution, begin = 0.0, end = 0.0):
+	def plot_offset_polyline(self, plt, ax, resolution, begin = 0.0, end = 0.0, center_marker=''):
 		sta_list, pline = self.get_polyline(resolution, begin, end)		# 선형을 resolution미터 간격으로 좌표 생성
 
 		x = [position[0] for position in pline]
@@ -883,10 +1081,11 @@ class alignment:
 				ax.fill(x_coordinates, y_coordinates, facecolor=rgb, edgecolor='orange', alpha=0.5)  # alpha controls transparency
 
 				cx, cy = center_point_of_polygon(vertices)
-				r = random.uniform(0.0, 1.0) * offset_step / 2.0
-				rgb = (random.uniform(0.0, 1.0), 0.3, 0.3)
-				circle = plt.Circle((cx, cy), r, color=rgb, fill=True)
-				ax.add_artist(circle)
+				if center_marker == 'o':
+					r = random.uniform(0.0, 1.0) * offset_step / 2.0
+					rgb = (random.uniform(0.0, 1.0), 0.3, 0.3)
+					circle = plt.Circle((cx, cy), r, color=rgb, fill=True)
+					ax.add_artist(circle)
 
 				index += 1
 
@@ -909,12 +1108,13 @@ class alignment:
 	def plot_align_curve(self, plt, ax):
 		index = 0
 		colors = ['b', 'c', 'k', 'g', 'm', 'y']	# https://matplotlib.org/stable/gallery/color/named_colors.html
+		spiral_labeled = False
 		while index < len(self._align_segments):
 			seg = self._align_segments[index]
 
-			if seg._type == "Curve":			
+			if seg._type == "Curve":
 				col = colors[index % 6]
-	
+
 				cx, cy, r = seg.get_circle()
 				circle = plt.Circle((cx, cy), r, color=col, fill=False)
 				ax.add_artist(circle)
@@ -923,6 +1123,16 @@ class alignment:
 				ax.scatter(x, y, c=col, marker='+', s=30)
 				x, y = seg._points[2]
 				ax.scatter(x, y, c=col, marker='+', s=30)
+
+			if seg._type == "Spiral": # clothoid. 완화곡선 구간을 굵은 주황선으로 강조 표시
+				steps = max(2, int(math.ceil(seg._length)))	# 약 1m 간격 샘플링
+				points = [seg.get_station_position(seg._length * i / steps) for i in range(steps + 1)]
+				x = [p[0] for p in points]
+				y = [p[1] for p in points]
+				label = 'Spiral (clothoid)' if spiral_labeled == False else None
+				ax.plot(x, y, c='orange', linewidth=4, alpha=0.7, solid_capstyle='round', zorder=3, label=label)
+				spiral_labeled = True
+				ax.scatter([x[0], x[-1]], [y[0], y[-1]], c='orange', marker='s', s=30, zorder=4)
 
 			index += 1
 
@@ -950,6 +1160,10 @@ class alignment:
 		ax.scatter(x, y, c='r', marker='^', s=50)
 
 		self.plot_align_curve(plt, ax)
+
+		handles, labels = ax.get_legend_handles_labels()
+		if len(handles) > 0:
+			ax.legend(loc='best')
 
 		ax.set_aspect('equal', 'box')	# axes.axis('equal')
 

@@ -18,7 +18,8 @@ def test_polyline_grid(cm):
 def main():
 	lp = lxml.landxml()	# Define landxml parser
 	# model = lp.load('./landxml_railway_sample.xml')	# Load landxml file
-	model = lp.load('./landxml_road_sample.xml')	 
+	# model = lp.load('./landxml_road_sample.xml')	 
+	model = lp.load('./landxml_road_cl_sample.xml')	 
 	# print(model)
 	lp.save('output_landxml.json')	# Convert landxml file to json and save
 
